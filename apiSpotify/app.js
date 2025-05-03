@@ -1,243 +1,139 @@
-const express = require('express');
-const qs = require('qs');
-require('dotenv').config();
-const cors = require('cors');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 const app = express();
+const querystring = require("querystring");
+const fetch = require("node-fetch");
+const { use } = require("react");
+const albums = require("./routes/Albums");
+const tracks = require("./routes/Tracks");
+const routest = require("./routes/routetest")
+
 const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
-
-app.use(cors({
+const redirect_uri = process.env.REDIRECT_URL;
+const frontEnd_URL = process.env.REDIRECT_FRONTEND;
+const corsOptions = {
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: 'GET, POST, PUT, DELETE',
+  allowedHeaders: 'Content-Type, Authorization',
+};
+
+app.use(cors(corsOptions));
 
 
-async function getAccessToken() {
+const generateRandomString = function (length) {
+  let text = "";
+  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
+
+app.get("/login", async (req, res) => {
+  let state = generateRandomString(16);
+  const scope = "user-read-private user-read-email";
+  console.log("Client ID:", client_id);
+  console.log("Client Secret:", client_secret);
+  console.log("Redirect URI:", redirect_uri);
+  // Redirect tới Spotify authorize
+  res.redirect(
+    "https://accounts.spotify.com/authorize?" +
+      querystring.stringify({
+        response_type: "code",
+        client_id: client_id,
+        scope: scope,
+        redirect_uri: redirect_uri,
+        state: state,
+      })
+  );
+});
+
+app.get("/callback", async (req, res) => {
+  const code = req.query.code || null;
+
   try {
-    const body = qs.stringify({ grant_type: 'client_credentials' });
-
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
+    const response = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
       headers: {
-        'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded'
+        "content-type": "application/x-www-form-urlencoded",
+        Authorization:
+          "Basic " +
+          Buffer.from(client_id + ":" + client_secret).toString("base64"),
       },
-      body: body
+      body: querystring.stringify({
+        code: code,
+        redirect_uri: redirect_uri,
+        grant_type: "authorization_code",
+      }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error(data);
-      throw new Error('Failed to get token');
+    if (response.ok) {
+      const data = await response.json();
+      const access_token = data.access_token;
+      const refresh_token = data.refresh_token;
+      return res.redirect(
+        `${frontEnd_URL}/auths/auth-success?` +
+          querystring.stringify({ access_token, refresh_token })
+      );
+    } else {
+      return res.redirect(
+        frontEnd_URL +
+          "/auth-fail?" +
+          querystring.stringify({ error: "token_error" })
+      );
     }
-
-    return data.access_token;
   } catch (error) {
-    console.error('Error getting access token:', error);
-    throw new Error('Unable to get access token');
-  }
-}
-
-
-app.get('/spotify/search', async (req, res) => {
-  const query = req.query.q;
-
-  if (!query) {
-    return res.status(400).json({ error: 'Query parameter "q" is required' });
-  }
-
-  try {
-    const accessToken = await getAccessToken();
-
-    const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track,artist,album&limit=10`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error(data);
-      return res.status(500).json({ error: 'Error searching Spotify' });
-    }
-
-    res.json(data);
-  } catch (error) {
-    console.error('Error searching Spotify:', error);
-    res.status(500).json({ error: 'Error searching Spotify' });
+    return res.redirect(
+      frontEnd_URL +
+        "/auth-fail?" +
+        querystring.stringify({ error: "server_error" })
+    );
   }
 });
 
-app.get("/spotify/Track", async (req, res) => {
+app.get("/refresh_token", async (req, res) => {
+  const refresh_token = req.query.refresh_token;
+  if (!refresh_token) {
+    return res.status(400).json({ error: "Missing refresh_token" });
+  }
+
   try {
-
-    const id = req.query.id
-
-    if(!id){
-      return res.status(400).json({error:"Missing ids paramater"})
-    }
-
-
-
-    const ACCESS_TOKEN = await getAccessToken();
-    const response = await fetch(`https://api.spotify.com/v1/tracks/${encodeURIComponent(id)}`, {
-      method: "GET",
+    const response = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
       headers: {
-        "Authorization": `Bearer ${ACCESS_TOKEN}`, // Thêm Authorization header
-        "Content-Type": "application/json"
-      }
-    });
-
-
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Có lỗi xảy ra' });
-  }
-});
-
-app.get("/spotify/Album",async (req,res)=>{
-  const id = req.query.id
-  try{
-
-    const ACCESS_TOKEN = await getAccessToken()
-    const response = await fetch(`https://api.spotify.com/v1/albums/${encodeURIComponent(id)}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${ACCESS_TOKEN}`, // Thêm Authorization header
-        "Content-Type": "application/json"
-      }
-    });
-    const data = await response.json()
-    res.json(data)
-  }catch(err){
-      console.log(err)
-  }
-
-
-})
-
-app.get("/spotify/Artist",async (req,res)=>{
-const id = req.query.id
-try{
-
-
-const ACCESS_TOKEN = await getAccessToken()
-const respone = await fetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(id)}`,{
-  method:"GET",
-  headers: {
-    "Authorization": `Bearer ${ACCESS_TOKEN}`, // Thêm Authorization header
-    "Content-Type": "application/json"
-  }
-})
-
-const data = await respone.json()
-res.json(data)
-
-}catch(err){
-  console.log(err)
-}
-})
-
-app.get("/spotify/Tracks", async (req, res) => {
-  try {
-    if (!req.query.ids) {
-      return res.status(400).json({ error: "Missing ids parameter" });
-    }
-    let idsArray = Array.isArray(req.query.ids) ? req.query.ids : req.query.ids.split(',');
-
-    const idString = idsArray.join(',');
-
-    const ACCESS_TOKEN = await getAccessToken();
-
-    const response = await fetch(`https://api.spotify.com/v1/tracks?ids=${encodeURIComponent(idString)}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${ACCESS_TOKEN}`,
-        "Content-Type": "application/json"
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Spotify API returned an error');
-    }
-
-    const data = await response.json();
-    res.json(data.tracks); // Trả về đúng mảng tracks
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Có lỗi xảy ra' });
-  }
-});
-
-app.get("/spotify/Albums",async (req,res)=>{
-  try {
-    if (!req.query.ids) {
-      return res.status(400).json({ error: "Missing ids parameter" });
-    }
-    let idsArray = Array.isArray(req.query.ids) ? req.query.ids : req.query.ids.split(',');
-
-    const idString = idsArray.join(',');
-
-    const ACCESS_TOKEN = await getAccessToken();
-
-    const response = await fetch(`https://api.spotify.com/v1/albums?ids=${encodeURIComponent(idString)}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${ACCESS_TOKEN}`,
-        "Content-Type": "application/json"
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Spotify API returned an error');
-    }
-
-    const data = await response.json();
-    res.json(data.albums); // Trả về đúng mảng tracks
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Có lỗi xảy ra' });
-  }
-})
-
-app.get("/spotify/Albums/newRelease",async (req, res) => {
-  try {
-    const accessToken = await getAccessToken();
-    const response = await fetch(`https://api.spotify.com/v1/browse/new-releases?limit=10`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization:
+          "Basic " +
+          Buffer.from(client_id + ":" + client_secret).toString("base64"),
       },
+      body: querystring.stringify({
+        grant_type: "refresh_token",
+        refresh_token: refresh_token,
+      }),
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      console.error(data);
-      return res.status(500).json({ error: 'Error fetching albums from Spotify' });
+    if (response.ok) {
+      res.json({
+        access_token: data.access_token,
+        expires_in: data.expires_in,
+      });
+    } else {
+      res.status(500).json({ error: "Could not refresh token" });
     }
-
-    // Chỉ lấy album cần thiết
-    const albums = data.albums.items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      artists: item.artists.map((artist) => artist.name).join(', '),
-      image: item.images[0]?.url,
-    }));
-
-    res.json({ albums });
-  } catch (error) {
-    console.error('Error fetching albums:', error);
-    res.status(500).json({ error: 'Error fetching albums from Spotify' });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
 
+app.use("/spotify/albums",albums)
+app.use("/spotify/tracks",tracks)
+app.use("/spotify/search",routest)
 
-app.listen(3000, "0.0.0.0",() => {
-  console.log(`Server is running on http://localhost:3000`);
+app.listen(3000, "0.0.0.0", () => {
+  console.log(`Server is running`);
 });

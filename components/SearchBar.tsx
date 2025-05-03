@@ -4,7 +4,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const SearchBar = () => {
   return (
-    <View style={{backgroundColor:"white", marginRight: 30, borderRadius:3 }} className="flex-row items-center ">
+    <View style={{backgroundColor:"white", marginRight: 30, borderRadius:3 }} className="flex-row items-center">
         <FontAwesome  name="search" 
                         size={15} 
                         color="black"
