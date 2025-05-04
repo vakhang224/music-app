@@ -1,0 +1,24 @@
+{
+    "playlists":[
+    {
+        "playlist":{
+            "id":"code",
+            "name":"name list",
+            "date":"date",
+            "items":[
+                {
+                    "track":{
+                        "id":"String"
+                    }
+                }
+            ]
+        },
+        "artist":{
+            "id":"String"
+        },
+        "track":{
+            "id":"String"
+        }
+    }
+    ]
+}

@@ -2,7 +2,6 @@ import { Button, Image, ScrollView, Text, TouchableOpacity, View } from "react-n
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { getQuery } from '@/model/getQuery';
 import { useEffect, useState } from "react";
 import ArtistsCard from "@/components/ArtistsCard";
 

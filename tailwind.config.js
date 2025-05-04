@@ -6,10 +6,16 @@ module.exports = {
   theme: {
     extend: {
       colors:{
-        one: "#3d3d3d",
-        two: "#171414",
-        three: "#ff9a68"
-      },
+        primary:"#030014",
+        black:{
+          100:"#000000",
+          300:"#f12001"
+        }
+        ,
+        gray:{
+          100:"#cccbc8"
+        }
+      }
     },
   },
   plugins: [],

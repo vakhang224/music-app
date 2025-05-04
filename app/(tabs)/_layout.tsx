@@ -13,7 +13,7 @@ const _layout = () => {
   return (
     <Tabs>
         <Tabs.Screen
-            name="index"
+            name="home"
             options={{
                 headerShown:false,
                 tabBarShowLabel: false,
@@ -145,7 +145,6 @@ const _layout = () => {
                 tabBarShowLabel: false,
                 tabBarStyle: {
                     height: 60,
-                    marginTop: -100,
                     marginBottom: 0,
                     backgroundColor: 'transparent',
                     borderTopWidth: 0,
@@ -181,6 +180,7 @@ const _layout = () => {
             }}
         />
     </Tabs>
+
   )
 }
 
