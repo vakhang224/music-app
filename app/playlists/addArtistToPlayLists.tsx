@@ -4,9 +4,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { FlatList, ScrollView, TextInput } from "react-native-gesture-handler";
 import { FontAwesome } from "@expo/vector-icons";
-import { useNavigation } from "expo-router";
-
-const AddPlayLis = () => {
+import { router, useNavigation } from "expo-router";
+import ArtistIconSelect from "@/components/artistsIconSelect";
+const AddArtistsToPlayList = () => {
   const navigation = useNavigation();
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -38,9 +38,7 @@ const AddPlayLis = () => {
   return (
     <SafeAreaView className="flex-1">
       <LinearGradient colors={["#141414", "#000000"]} className="flex-1 flex justify-center items-center" >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 30 }}
+        <View
           className="flex-1"
         >
           <View className="flex-1 flex flex-col gap-4">
@@ -78,42 +76,15 @@ const AddPlayLis = () => {
                 }}
                 
                 renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => console.log("press")}
-                    style={{ alignItems: "center" }}
-                  >
-                    <View
-                      style={{
-                        width: 100,
-                        height: 100,
-                        borderRadius: 50,
-                        overflow: "hidden",
-                        marginBottom:10
-                      }}
-                    >
-                      <Image
-                        source={{ uri: item.image }}
-                        style={{ width: 100, height: 100, borderRadius: 50}}
-                      />
-                    </View>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontWeight: "bold",
-                        fontSize: 16,
-                      }}
-                    >
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
+                  <ArtistIconSelect name={item.name} image={item.image}/>
                 )}
               />
             </View>
           </View>
         
-        </ScrollView>
+        </View>
 <View style={{position:"absolute",bottom:20,width:100}} className="bg-white p-3 rounded-full">
-  <TouchableOpacity onPress={() => console.log("Pressed")}>
+  <TouchableOpacity onPress={() => router.back()}>
     <Text className="font-bold text-xl text-center">xong</Text>
   </TouchableOpacity>
 </View>
@@ -122,6 +93,6 @@ const AddPlayLis = () => {
   );
 };
 
-export default AddPlayLis;
+export default AddArtistsToPlayList;
 
 const styles = StyleSheet.create({});
